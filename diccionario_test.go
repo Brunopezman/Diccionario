@@ -15,8 +15,8 @@ func TestDiccionarioVacio(t *testing.T) {
 	dic := TDADiccionario.CrearHash[string, string]()
 	require.EqualValues(t, 0, dic.Cantidad())
 	require.False(t, dic.Pertenece("A"))
-	// require.PanicsWithValue(t, "La clave no pertenece al diccionario", func() { dic.Obtener("A") })
-	// require.PanicsWithValue(t, "La clave no pertenece al diccionario", func() { dic.Borrar("A") })
+	require.PanicsWithValue(t, "La clave no pertenece al diccionario", func() { dic.Obtener("A") })
+	require.PanicsWithValue(t, "La clave no pertenece al diccionario", func() { dic.Borrar("A") })
 }
 
 func TestDiccionarioClaveDefault(t *testing.T) {

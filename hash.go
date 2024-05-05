@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	_TAM int = 10
+	_TAM_INICIAL int = 10
 )
 
 type parClaveValor[K comparable, V any] struct {
@@ -21,8 +21,8 @@ type hash[K comparable, V any] struct {
 }
 
 type iterDiccionario[K comparable, V any] struct {
-	actual      K
-	siguiente   K
+	parActual   parClaveValor[K, V]
+	pos         int
 	diccionario *hash[K, V]
 }
 
@@ -32,8 +32,8 @@ func CrearParClaveValor[K comparable, V any](clave K, valor V) *parClaveValor[K,
 
 func CrearHash[K comparable, V any]() Diccionario[K, V] {
 	return &hash[K, V]{
-		tabla:    make([]TDALista.Lista[parClaveValor[K, V]], _TAM),
-		tam:      _TAM,
+		tabla:    make([]TDALista.Lista[parClaveValor[K, V]], _TAM_INICIAL),
+		tam:      _TAM_INICIAL,
 		cantidad: 0,
 	}
 }
@@ -51,24 +51,23 @@ func fhash[K comparable](clave K, capacidad int) int {
 }
 
 func (dic *hash[K, V]) Guardar(clave K, dato V) {
-	pos := fhash(clave, _TAM)
-	if dic.tabla[pos].EstaVacia() {
-		dic.tabla[pos].InsertarUltimo(*CrearParClaveValor(clave, dato))
+	pos := fhash(clave, _TAM_INICIAL)
+	if dic.tabla[pos] == nil {
+		dic.tabla[pos] = TDALista.CrearListaEnlazada[parClaveValor[K, V]]()
 	}
-	for iter := dic.tabla[pos].Iterador(); iter.HaySiguiente(); iter.Siguiente() {
-		iter.Insertar(*CrearParClaveValor(clave, dato))
-	}
-
+	dic.tabla[pos].InsertarUltimo(*CrearParClaveValor(clave, dato))
 	dic.cantidad++
 
 }
 
 func (dic *hash[K, V]) Pertenece(clave K) bool {
-	pos := fhash(clave, _TAM)
-	for iter := dic.tabla[pos].Iterador(); iter.HaySiguiente(); iter.Siguiente() {
-		parClaveValor := iter.VerActual()
-		if parClaveValor.clave == clave {
-			return true
+	pos := fhash(clave, _TAM_INICIAL)
+	if dic.tabla[pos] != nil {
+		for iter := dic.tabla[pos].Iterador(); iter.HaySiguiente(); iter.Siguiente() {
+			parClaveValor := iter.VerActual()
+			if parClaveValor.clave == clave {
+				return true
+			}
 		}
 	}
 	return false
@@ -76,26 +75,31 @@ func (dic *hash[K, V]) Pertenece(clave K) bool {
 }
 
 func (dic *hash[K, V]) Obtener(clave K) V {
-	pos := fhash(clave, _TAM)
-	for iter := dic.tabla[pos].Iterador(); iter.HaySiguiente(); iter.Siguiente() {
-		elemento := iter.VerActual()
-		if elemento == clave {
-			return dic.valor
+	pos := fhash(clave, _TAM_INICIAL)
+	if dic.tabla[pos] != nil {
+		for iter := dic.tabla[pos].Iterador(); iter.HaySiguiente(); iter.Siguiente() {
+			parClaveValor := iter.VerActual()
+			if parClaveValor.clave == clave {
+				return parClaveValor.valor
+			}
 		}
 	}
 	panic("La clave no pertenece al diccionario")
 }
 
 func (dic *hash[K, V]) Borrar(clave K) V {
-	pos := fhash(clave, _TAM)
-	for iter := dic.tabla[pos].Iterador(); iter.HaySiguiente(); iter.Siguiente() {
-		elemento, valor := dic.Iterador().VerActual()
-		if elemento == clave {
-			iter.Borrar()
-			dic.cantidad--
-			return valor
+	pos := fhash(clave, _TAM_INICIAL)
+	if dic.tabla[pos] != nil {
+		for iter := dic.tabla[pos].Iterador(); iter.HaySiguiente(); iter.Siguiente() {
+			parClaveValor := iter.VerActual()
+			if parClaveValor.clave == clave {
+				iter.Borrar()
+				dic.cantidad--
+				return parClaveValor.valor
+			}
 		}
 	}
+
 	panic("La clave no pertenece al diccionario")
 }
 
@@ -108,23 +112,34 @@ func (dic *hash[K, V]) Iterar(func(clave K, dato V) bool) {
 }
 
 func (dic *hash[K, V]) Iterador() IterDiccionario[K, V] {
-	return &iterDiccionario[K, V]{}
+	pos := 0
+
+	for dic.tabla[pos] == nil {
+		pos += 1
+
+	}
+	actual := dic.tabla[pos].VerPrimero()
+	return &iterDiccionario[K, V]{parActual: actual,
+		pos:         pos,
+		diccionario: dic}
 }
 
 func (iter *iterDiccionario[K, V]) HaySiguiente() bool {
-	return iter.diccionario.tabla != nil
+
+	return iter.pos != iter.diccionario.cantidad
 }
 
 func (iter *iterDiccionario[K, V]) VerActual() (K, V) {
 	if !iter.HaySiguiente() {
 		panic("El iterador termino de iterar")
 	}
-	return iter.diccionario.clave, iter.diccionario.valor
+
+	return iter.parActual.clave, iter.parActual.valor
 }
 
 func (iter *iterDiccionario[K, V]) Siguiente() {
 	if !iter.HaySiguiente() {
 		panic("El iterador termino de iterar")
 	}
-	iter.actual = iter.siguiente
+
 }
