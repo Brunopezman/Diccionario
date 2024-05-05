@@ -105,6 +105,7 @@ func TestReemplazoDato(t *testing.T) {
 	require.EqualValues(t, 2, dic.Cantidad())
 	require.EqualValues(t, "miu", dic.Obtener(clave))
 	require.EqualValues(t, "baubau", dic.Obtener(clave2))
+
 }
 
 func TestReemplazoDatoHopscotch(t *testing.T) {
@@ -229,7 +230,6 @@ func TestConClavesStructs(t *testing.T) {
 	require.EqualValues(t, 5, dic.Borrar(a1))
 	require.False(t, dic.Pertenece(a1))
 	require.EqualValues(t, 2, dic.Obtener(a3))
-
 }
 
 func TestClaveVacia(t *testing.T) {

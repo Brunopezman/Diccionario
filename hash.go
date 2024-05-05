@@ -52,8 +52,17 @@ func fhash[K comparable](clave K, capacidad int) int {
 
 func (dic *hash[K, V]) Guardar(clave K, dato V) {
 	pos := fhash(clave, _TAM_INICIAL)
+
 	if dic.tabla[pos] == nil {
 		dic.tabla[pos] = TDALista.CrearListaEnlazada[parClaveValor[K, V]]()
+	}
+	for iter := dic.tabla[pos].Iterador(); iter.HaySiguiente(); iter.Siguiente() {
+		parClaveValor := iter.VerActual()
+		if parClaveValor.clave == clave {
+			iter.Borrar()
+			iter.Insertar(*CrearParClaveValor(clave, dato))
+			return
+		}
 	}
 	dic.tabla[pos].InsertarUltimo(*CrearParClaveValor(clave, dato))
 	dic.cantidad++
@@ -118,7 +127,8 @@ func (dic *hash[K, V]) Iterador() IterDiccionario[K, V] {
 		pos += 1
 
 	}
-	actual := dic.tabla[pos].VerPrimero()
+	iterLista := dic.tabla[pos].Iterador()
+	actual := iterLista.VerActual()
 	return &iterDiccionario[K, V]{parActual: actual,
 		pos:         pos,
 		diccionario: dic}
@@ -126,7 +136,7 @@ func (dic *hash[K, V]) Iterador() IterDiccionario[K, V] {
 
 func (iter *iterDiccionario[K, V]) HaySiguiente() bool {
 
-	return iter.pos != iter.diccionario.cantidad
+	return iter.pos < iter.diccionario.tam
 }
 
 func (iter *iterDiccionario[K, V]) VerActual() (K, V) {
@@ -140,6 +150,14 @@ func (iter *iterDiccionario[K, V]) VerActual() (K, V) {
 func (iter *iterDiccionario[K, V]) Siguiente() {
 	if !iter.HaySiguiente() {
 		panic("El iterador termino de iterar")
+	}
+	if iter.diccionario.tabla[iter.pos].Iterador().HaySiguiente() {
+		iter.diccionario.tabla[iter.pos].Iterador().Siguiente()
+	} else {
+		for iter.diccionario.tabla[iter.pos] == nil {
+			iter.pos += 1
+		}
+		iter.diccionario.tabla[iter.pos].Iterador()
 	}
 
 }
