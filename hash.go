@@ -50,13 +50,13 @@ func fhash[K comparable](clave K, capacidad int) int {
 	return hash
 }
 
-func (dic *hash[K, V]) Guardar(clave K, dato V) {
+func (h *hash[K, V]) Guardar(clave K, dato V) {
 	pos := fhash(clave, _TAM_INICIAL)
 
-	if dic.tabla[pos] == nil {
-		dic.tabla[pos] = TDALista.CrearListaEnlazada[parClaveValor[K, V]]()
+	if h.tabla[pos] == nil {
+		h.tabla[pos] = TDALista.CrearListaEnlazada[parClaveValor[K, V]]()
 	}
-	for iter := dic.tabla[pos].Iterador(); iter.HaySiguiente(); iter.Siguiente() {
+	for iter := h.tabla[pos].Iterador(); iter.HaySiguiente(); iter.Siguiente() {
 		parClaveValor := iter.VerActual()
 		if parClaveValor.clave == clave {
 			iter.Borrar()
@@ -64,15 +64,15 @@ func (dic *hash[K, V]) Guardar(clave K, dato V) {
 			return
 		}
 	}
-	dic.tabla[pos].InsertarUltimo(*CrearParClaveValor(clave, dato))
-	dic.cantidad++
+	h.tabla[pos].InsertarUltimo(*CrearParClaveValor(clave, dato))
+	h.cantidad++
 
 }
 
-func (dic *hash[K, V]) Pertenece(clave K) bool {
+func (h *hash[K, V]) Pertenece(clave K) bool {
 	pos := fhash(clave, _TAM_INICIAL)
-	if dic.tabla[pos] != nil {
-		for iter := dic.tabla[pos].Iterador(); iter.HaySiguiente(); iter.Siguiente() {
+	if h.tabla[pos] != nil {
+		for iter := h.tabla[pos].Iterador(); iter.HaySiguiente(); iter.Siguiente() {
 			parClaveValor := iter.VerActual()
 			if parClaveValor.clave == clave {
 				return true
@@ -83,10 +83,10 @@ func (dic *hash[K, V]) Pertenece(clave K) bool {
 
 }
 
-func (dic *hash[K, V]) Obtener(clave K) V {
+func (h *hash[K, V]) Obtener(clave K) V {
 	pos := fhash(clave, _TAM_INICIAL)
-	if dic.tabla[pos] != nil {
-		for iter := dic.tabla[pos].Iterador(); iter.HaySiguiente(); iter.Siguiente() {
+	if h.tabla[pos] != nil {
+		for iter := h.tabla[pos].Iterador(); iter.HaySiguiente(); iter.Siguiente() {
 			parClaveValor := iter.VerActual()
 			if parClaveValor.clave == clave {
 				return parClaveValor.valor
@@ -96,14 +96,14 @@ func (dic *hash[K, V]) Obtener(clave K) V {
 	panic("La clave no pertenece al diccionario")
 }
 
-func (dic *hash[K, V]) Borrar(clave K) V {
+func (h *hash[K, V]) Borrar(clave K) V {
 	pos := fhash(clave, _TAM_INICIAL)
-	if dic.tabla[pos] != nil {
-		for iter := dic.tabla[pos].Iterador(); iter.HaySiguiente(); iter.Siguiente() {
+	if h.tabla[pos] != nil {
+		for iter := h.tabla[pos].Iterador(); iter.HaySiguiente(); iter.Siguiente() {
 			parClaveValor := iter.VerActual()
 			if parClaveValor.clave == clave {
 				iter.Borrar()
-				dic.cantidad--
+				h.cantidad--
 				return parClaveValor.valor
 			}
 		}
@@ -112,14 +112,14 @@ func (dic *hash[K, V]) Borrar(clave K) V {
 	panic("La clave no pertenece al diccionario")
 }
 
-func (dic *hash[K, V]) Cantidad() int {
-	return dic.cantidad
+func (h *hash[K, V]) Cantidad() int {
+	return h.cantidad
 }
 
-func (dic *hash[K, V]) Iterar(visitar func(clave K, dato V) bool) {
-	for pos := 0; pos < dic.tam; pos++ {
-		if dic.tabla[pos] != nil {
-			for iterLista := dic.tabla[pos].Iterador(); iterLista.HaySiguiente(); iterLista.Siguiente() {
+func (h *hash[K, V]) Iterar(visitar func(clave K, dato V) bool) {
+	for pos := 0; pos < h.tam; pos++ {
+		if h.tabla[pos] != nil {
+			for iterLista := h.tabla[pos].Iterador(); iterLista.HaySiguiente(); iterLista.Siguiente() {
 				if !visitar(iterLista.VerActual().clave, iterLista.VerActual().valor) {
 					break
 				}
@@ -129,18 +129,18 @@ func (dic *hash[K, V]) Iterar(visitar func(clave K, dato V) bool) {
 
 }
 
-func (dic *hash[K, V]) Iterador() IterDiccionario[K, V] {
+func (h *hash[K, V]) Iterador() IterDiccionario[K, V] {
 
 	pos := 0
 
-	for pos < dic.tam {
-		if dic.tabla[pos] == nil {
+	for pos < h.tam {
+		if h.tabla[pos] == nil {
 			pos += 1
 		} else {
 			return &iterDiccionario[K, V]{
-				parActual:   dic.tabla[pos].VerPrimero(),
+				parActual:   h.tabla[pos].VerPrimero(),
 				pos:         pos,
-				diccionario: dic,
+				diccionario: h,
 			}
 		}
 	}
@@ -192,7 +192,7 @@ func (iter *iterDiccionario[K, V]) Siguiente() {
 
 }
 
-func (dic *hash[K, V]) redimensionar(n, m int) {
-	factor = n / m
+// func (h *hash[K, V]) redimensionar(n, m int) {
+// 	factor := n / m
 
-}
+// }
