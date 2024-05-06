@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	_TAM_INICIAL int = 10
+	_TAM_INICIAL int = 7
 )
 
 type parClaveValor[K comparable, V any] struct {
@@ -116,27 +116,42 @@ func (dic *hash[K, V]) Cantidad() int {
 	return dic.cantidad
 }
 
-func (dic *hash[K, V]) Iterar(func(clave K, dato V) bool) {
+func (dic *hash[K, V]) Iterar(visitar func(clave K, dato V) bool) {
+	for pos := 0; pos < dic.tam; pos++ {
+		if dic.tabla[pos] != nil {
+			for iterLista := dic.tabla[pos].Iterador(); iterLista.HaySiguiente(); iterLista.Siguiente() {
+				if !visitar(iterLista.VerActual().clave, iterLista.VerActual().valor) {
+					break
+				}
+			}
+		}
+	}
 
 }
 
 func (dic *hash[K, V]) Iterador() IterDiccionario[K, V] {
+
 	pos := 0
 
-	for dic.tabla[pos] == nil {
-		pos += 1
-
+	for pos < dic.tam {
+		if dic.tabla[pos] == nil {
+			pos += 1
+		} else {
+			return &iterDiccionario[K, V]{
+				parActual:   dic.tabla[pos].VerPrimero(),
+				pos:         pos,
+				diccionario: dic,
+			}
+		}
 	}
-	iterLista := dic.tabla[pos].Iterador()
-	actual := iterLista.VerActual()
-	return &iterDiccionario[K, V]{parActual: actual,
-		pos:         pos,
-		diccionario: dic}
+	return nil
+
 }
 
 func (iter *iterDiccionario[K, V]) HaySiguiente() bool {
+	return iter != nil
 
-	return iter.pos < iter.diccionario.tam
+	//return iter.pos < iter.diccionario.tam || iter.diccionario.tabla[iter.pos].Iterador().HaySiguiente()
 }
 
 func (iter *iterDiccionario[K, V]) VerActual() (K, V) {
@@ -149,15 +164,35 @@ func (iter *iterDiccionario[K, V]) VerActual() (K, V) {
 
 func (iter *iterDiccionario[K, V]) Siguiente() {
 	if !iter.HaySiguiente() {
-		panic("El iterador termino de iterar")
+		panic("El iterador terminó de iterar")
 	}
-	if iter.diccionario.tabla[iter.pos].Iterador().HaySiguiente() {
-		iter.diccionario.tabla[iter.pos].Iterador().Siguiente()
-	} else {
-		for iter.diccionario.tabla[iter.pos] == nil {
-			iter.pos += 1
+
+	for iterLista := iter.diccionario.tabla[iter.pos].Iterador(); iterLista.HaySiguiente(); iterLista.Siguiente() {
+		parClaveValor := iterLista.VerActual()
+		if iter.parActual.clave == parClaveValor.clave {
+			iterLista.Siguiente()
+			if iterLista.HaySiguiente() {
+				iter.parActual = iterLista.VerActual()
+				return
+			}
 		}
-		iter.diccionario.tabla[iter.pos].Iterador()
 	}
+
+	for iter.pos < iter.diccionario.tam {
+		if iter.diccionario.tabla[iter.pos] != nil {
+			iter.parActual = iter.diccionario.tabla[iter.pos].VerPrimero()
+			return
+		}
+		iter.pos++
+	}
+
+	if iter.pos > iter.diccionario.tam {
+		iter = nil
+	}
+
+}
+
+func (dic *hash[K, V]) redimensionar(n, m int) {
+	factor = n / m
 
 }
