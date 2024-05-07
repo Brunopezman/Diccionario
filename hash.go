@@ -8,7 +8,7 @@ import (
 const (
 	_TAM_INICIAL     int = 7
 	_FACTOR_AGRANDAR int = 2
-	_FACTOR_ACHICAR  int = 2
+	_FACTOR_ACHICAR  int = 4
 )
 
 type parClaveValor[K comparable, V any] struct {
@@ -55,8 +55,8 @@ func fhash[K comparable](clave K, capacidad int) int {
 func (h *hash[K, V]) Guardar(clave K, dato V) {
 	pos := fhash(clave, _TAM_INICIAL)
 
-	if h.cantidad == 3*(h.tam-1) {
-		h.redimensionar(_FACTOR_AGRANDAR)
+	if h.cantidad == h.tam {
+		h.redimensionar(h.tam * _FACTOR_AGRANDAR)
 	}
 
 	if h.tabla[pos] == nil {
@@ -90,7 +90,7 @@ func (h *hash[K, V]) Pertenece(clave K) bool {
 }
 
 func (h *hash[K, V]) Obtener(clave K) V {
-	pos := fhash(clave, _TAM_INICIAL)
+	pos := fhash(clave, h.tam)
 	if h.tabla[pos] != nil {
 		for iter := h.tabla[pos].Iterador(); iter.HaySiguiente(); iter.Siguiente() {
 			parClaveValor := iter.VerActual()
@@ -103,18 +103,21 @@ func (h *hash[K, V]) Obtener(clave K) V {
 }
 
 func (h *hash[K, V]) Borrar(clave K) V {
-	pos := fhash(clave, _TAM_INICIAL)
+	pos := fhash(clave, h.tam)
 
-	if h.cantidad == (h.tam-1)/4 {
-		h.redimensionar(_FACTOR_ACHICAR)
+	if h.cantidad < h.tam/_FACTOR_ACHICAR && h.cantidad > _TAM_INICIAL {
+		h.redimensionar(h.tam / _FACTOR_ACHICAR)
 	}
 
 	if h.tabla[pos] != nil {
-		for iter := h.tabla[pos].Iterador(); iter.HaySiguiente(); iter.Siguiente() {
-			parClaveValor := iter.VerActual()
+		for iterLista := h.tabla[pos].Iterador(); iterLista.HaySiguiente(); iterLista.Siguiente() {
+			parClaveValor := iterLista.VerActual()
 			if parClaveValor.clave == clave {
-				iter.Borrar()
+				iterLista.Borrar()
 				h.cantidad--
+				if h.tabla[pos].EstaVacia() {
+					h.tabla[pos] = nil
+				}
 				return parClaveValor.valor
 			}
 		}
@@ -132,7 +135,7 @@ func (h *hash[K, V]) Iterar(visitar func(clave K, dato V) bool) {
 		if h.tabla[pos] != nil {
 			for iterLista := h.tabla[pos].Iterador(); iterLista.HaySiguiente(); iterLista.Siguiente() {
 				if !visitar(iterLista.VerActual().clave, iterLista.VerActual().valor) {
-					break
+					return
 				}
 			}
 		}
@@ -147,11 +150,10 @@ func (h *hash[K, V]) Iterador() IterDiccionario[K, V] {
 			iterador.pos += 1
 		} else {
 			iterador.parActual = h.tabla[iterador.pos].VerPrimero()
-
+			break
 		}
 	}
 	return iterador
-
 }
 
 func (iter *iterDiccionario[K, V]) HaySiguiente() bool {
@@ -168,7 +170,7 @@ func (iter *iterDiccionario[K, V]) VerActual() (K, V) {
 
 func (iter *iterDiccionario[K, V]) Siguiente() {
 	if !iter.HaySiguiente() {
-		panic("El iterador terminó de iterar")
+		panic("El iterador termino de iterar")
 	}
 
 	for iterLista := iter.diccionario.tabla[iter.pos].Iterador(); iterLista.HaySiguiente(); iterLista.Siguiente() {
@@ -179,6 +181,7 @@ func (iter *iterDiccionario[K, V]) Siguiente() {
 				iter.parActual = iterLista.VerActual()
 				return
 			}
+			break
 		}
 	}
 	iter.pos++
@@ -192,25 +195,23 @@ func (iter *iterDiccionario[K, V]) Siguiente() {
 
 }
 
-func (h *hash[K, V]) redimensionar(factor int) {
+func (h *hash[K, V]) redimensionar(nuevoTam int) {
 
-	nuevaTabla := make([]TDALista.Lista[parClaveValor[K, V]], h.tam*factor)
-	anteriorTam := h.tam
-	h.tam *= factor
+	tablaAnterior := h.tabla
+	tamAnterior := h.tam
+
+	h.tam = nuevoTam
+	h.tabla = make([]TDALista.Lista[parClaveValor[K, V]], h.tam)
 	h.cantidad = 0
 
-	for pos := 0; pos < antiguoTam; pos++ {
-		lista := h.tabla[i]
-		for iter := lista.Iterador(); iter.HaySiguiente(); iter.Siguiente() {
-			par := iter.VerActual()
-			nuevaPos := fhash(par.clave, h.tam)
-			if nuevaTabla[nuevaPos] == nil {
-				nuevaTabla[nuevaPos] = TDALista.CrearListaEnlazada[parClaveValor[K, V]]()
+	for pos := 0; pos < tamAnterior; pos++ {
+		if tablaAnterior[pos] != nil {
+			lista := tablaAnterior[pos]
+			for iterLista := lista.Iterador(); iterLista.HaySiguiente(); iterLista.Siguiente() {
+				h.Guardar(iterLista.VerActual().clave, iterLista.VerActual().valor)
 			}
-			nuevaTabla[nuevaPos].InsertarUltimo(*CrearParClaveValor(par.clave, par.valor))
-			h.cantidad++
-		}
-	}
 
-	h.tabla = nuevaTabla
+		}
+
+	}
 }
