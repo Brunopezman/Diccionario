@@ -7,6 +7,8 @@ import (
 
 const (
 	_TAM_INICIAL int = 7
+	_FACTOR_AGRANDAR int = 2
+	_FACTOR_ACHICAR int = 2
 )
 
 type parClaveValor[K comparable, V any] struct {
@@ -53,6 +55,10 @@ func fhash[K comparable](clave K, capacidad int) int {
 func (h *hash[K, V]) Guardar(clave K, dato V) {
 	pos := fhash(clave, _TAM_INICIAL)
 
+	if h.cantidad == 3* (h.tam - 1) {
+		redimensionar(_FACTOR_AGRANDAR)
+	}
+	
 	if h.tabla[pos] == nil {
 		h.tabla[pos] = TDALista.CrearListaEnlazada[parClaveValor[K, V]]()
 	}
@@ -66,7 +72,7 @@ func (h *hash[K, V]) Guardar(clave K, dato V) {
 	}
 	h.tabla[pos].InsertarUltimo(*CrearParClaveValor(clave, dato))
 	h.cantidad++
-
+	
 }
 
 func (h *hash[K, V]) Pertenece(clave K) bool {
@@ -98,6 +104,11 @@ func (h *hash[K, V]) Obtener(clave K) V {
 
 func (h *hash[K, V]) Borrar(clave K) V {
 	pos := fhash(clave, _TAM_INICIAL)
+	
+	if h.cantidad ==  (h.tam - 1) / 4 {
+		redimensionar(_FACTOR_ACHICAR)
+	}
+	
 	if h.tabla[pos] != nil {
 		for iter := h.tabla[pos].Iterador(); iter.HaySiguiente(); iter.Siguiente() {
 			parClaveValor := iter.VerActual()
@@ -130,15 +141,12 @@ func (h *hash[K, V]) Iterar(visitar func(clave K, dato V) bool) {
 }
 
 func (h *hash[K, V]) Iterador() IterDiccionario[K, V] {
-	iterador := &iterDiccionari[K, V]{pos:0, diccionario:h}
+	iterador := &iterDiccionario[K, V]{pos:0, diccionario:h}
 	for iterador.pos < h.tam {
 		if h.tabla[pos] == nil {
 			iterador.pos += 1
 		} else {
-			return &iterDiccionario[K, V]{
-				parActual:   h.tabla[pos].VerPrimero(),
-				pos:         pos,
-				diccionario: h,
+			iterador.parActual = h.tabla[iterador.pos].VerPrimero()
 			}
 		}
 	}
@@ -182,4 +190,19 @@ func (iter *iterDiccionario[K, V]) Siguiente() {
 		iter.pos++
 	}
 
+}
+
+func (h *hash[K, V]) redimensionar(factor int) {
+
+	tablaActual := h.tabla
+	tamActual := h.tam
+
+	h.tabla:make([]TDALista.Lista[parClaveValor[K, V]], h.tam*factor)),
+	h.tam = h.tam*factor
+	h.cantidad: 0
+
+	for pos:=0; pos < tamActual; pos++ {
+		lista := tablaActual[pos]
+		h.Guardar(lista.parClaveValor)
+	}
 }
