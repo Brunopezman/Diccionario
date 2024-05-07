@@ -6,9 +6,9 @@ import (
 )
 
 const (
-	_TAM_INICIAL     int = 7
-	_FACTOR_AGRANDAR int = 2
-	_FACTOR_ACHICAR  int = 4
+	_TAM_INICIAL     int = 13
+	_FACTOR_AGRANDAR int = 3
+	_FACTOR_ACHICAR  int = 2
 )
 
 type parClaveValor[K comparable, V any] struct {
@@ -55,7 +55,7 @@ func fhash[K comparable](clave K, capacidad int) int {
 func (h *hash[K, V]) Guardar(clave K, dato V) {
 	pos := fhash(clave, _TAM_INICIAL)
 
-	if h.cantidad == h.tam {
+	if h.cantidad/h.tam >= _FACTOR_AGRANDAR {
 		h.redimensionar(h.tam * _FACTOR_AGRANDAR)
 	}
 
@@ -105,10 +105,6 @@ func (h *hash[K, V]) Obtener(clave K) V {
 func (h *hash[K, V]) Borrar(clave K) V {
 	pos := fhash(clave, h.tam)
 
-	if h.cantidad < h.tam/_FACTOR_ACHICAR && h.cantidad > _TAM_INICIAL {
-		h.redimensionar(h.tam / _FACTOR_ACHICAR)
-	}
-
 	if h.tabla[pos] != nil {
 		for iterLista := h.tabla[pos].Iterador(); iterLista.HaySiguiente(); iterLista.Siguiente() {
 			parClaveValor := iterLista.VerActual()
@@ -122,7 +118,9 @@ func (h *hash[K, V]) Borrar(clave K) V {
 			}
 		}
 	}
-
+	if h.cantidad/h.tam < _FACTOR_ACHICAR {
+		h.redimensionar(h.tam / _FACTOR_ACHICAR)
+	}
 	panic("La clave no pertenece al diccionario")
 }
 
