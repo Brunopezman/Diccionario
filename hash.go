@@ -130,12 +130,10 @@ func (h *hash[K, V]) Iterar(visitar func(clave K, dato V) bool) {
 }
 
 func (h *hash[K, V]) Iterador() IterDiccionario[K, V] {
-
-	pos := 0
-
-	for pos < h.tam {
+	iterador := &iterDiccionari[K, V]{pos:0, diccionario:h}
+	for iterador.pos < h.tam {
 		if h.tabla[pos] == nil {
-			pos += 1
+			iterador.pos += 1
 		} else {
 			return &iterDiccionario[K, V]{
 				parActual:   h.tabla[pos].VerPrimero(),
@@ -144,14 +142,12 @@ func (h *hash[K, V]) Iterador() IterDiccionario[K, V] {
 			}
 		}
 	}
-	return nil
+	return iterador
 
 }
 
 func (iter *iterDiccionario[K, V]) HaySiguiente() bool {
-	return iter != nil
-
-	//return iter.pos < iter.diccionario.tam || iter.diccionario.tabla[iter.pos].Iterador().HaySiguiente()
+	return iter.pos < iter.diccionario.tam
 }
 
 func (iter *iterDiccionario[K, V]) VerActual() (K, V) {
@@ -177,7 +173,7 @@ func (iter *iterDiccionario[K, V]) Siguiente() {
 			}
 		}
 	}
-
+	iter.pos++
 	for iter.pos < iter.diccionario.tam {
 		if iter.diccionario.tabla[iter.pos] != nil {
 			iter.parActual = iter.diccionario.tabla[iter.pos].VerPrimero()
@@ -186,13 +182,4 @@ func (iter *iterDiccionario[K, V]) Siguiente() {
 		iter.pos++
 	}
 
-	if iter.pos > iter.diccionario.tam {
-		iter = nil
-	}
-
 }
-
-// func (h *hash[K, V]) redimensionar(n, m int) {
-// 	factor := n / m
-
-// }
