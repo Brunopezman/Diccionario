@@ -195,11 +195,11 @@ func (iter *iterDiccionario[K, V]) Siguiente() {
 func (h *hash[K, V]) redimensionar(factor int) {
 
 	nuevaTabla := make([]TDALista.Lista[parClaveValor[K, V]], h.tam*factor)
-	antiguoTam := h.tam
+	anteriorTam := h.tam
 	h.tam *= factor
 	h.cantidad = 0
 
-	for i := 0; i < antiguoTam; i++ {
+	for pos := 0; pos < antiguoTam; pos++ {
 		lista := h.tabla[i]
 		for iter := lista.Iterador(); iter.HaySiguiente(); iter.Siguiente() {
 			par := iter.VerActual()
