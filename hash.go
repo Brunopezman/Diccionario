@@ -53,7 +53,7 @@ func fhash[K comparable](clave K, capacidad int) int {
 }
 
 func (h *hash[K, V]) Guardar(clave K, dato V) {
-	pos := fhash(clave, _TAM_INICIAL)
+	pos := fhash(clave, h.tam)
 
 	if h.cantidad/h.tam >= _FACTOR_AGRANDAR {
 		h.redimensionar(h.tam * _FACTOR_AGRANDAR)
@@ -76,7 +76,7 @@ func (h *hash[K, V]) Guardar(clave K, dato V) {
 }
 
 func (h *hash[K, V]) Pertenece(clave K) bool {
-	pos := fhash(clave, _TAM_INICIAL)
+	pos := fhash(clave, h.tam)
 	if h.tabla[pos] != nil {
 		for iter := h.tabla[pos].Iterador(); iter.HaySiguiente(); iter.Siguiente() {
 			parClaveValor := iter.VerActual()
