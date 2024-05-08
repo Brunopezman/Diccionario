@@ -32,12 +32,18 @@ func CrearParClaveValor[K comparable, V any](clave K, valor V) *parClaveValor[K,
 	return &parClaveValor[K, V]{clave: clave, valor: valor}
 }
 
+func (h *hash[K, V]) inicializarTabla() {
+	h.tabla = make([]TDALista.Lista[parClaveValor[K, V]], h.tam)
+	h.cantidad = 0
+}
+
 func CrearHash[K comparable, V any]() Diccionario[K, V] {
-	return &hash[K, V]{
-		tabla:    make([]TDALista.Lista[parClaveValor[K, V]], _TAM_INICIAL),
+	diccionario := &hash[K, V]{
 		tam:      _TAM_INICIAL,
 		cantidad: 0,
 	}
+	diccionario.inicializarTabla()
+	return diccionario
 }
 
 func convertirABytes[K comparable](clave K) []byte {
@@ -199,7 +205,7 @@ func (h *hash[K, V]) redimensionar(nuevoTam int) {
 	tamAnterior := h.tam
 
 	h.tam = nuevoTam
-	h.tabla = make([]TDALista.Lista[parClaveValor[K, V]], h.tam)
+	h.inicializarTabla()
 	h.cantidad = 0
 
 	for pos := 0; pos < tamAnterior; pos++ {
