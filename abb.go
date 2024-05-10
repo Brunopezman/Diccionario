@@ -39,6 +39,7 @@ func (a *abb[K, V]) buscarPuntero(clave K, nodo **nodoAbb[K, V]) **nodoAbb[K, V]
 func (a *abb[K, V]) Guardar(clave K, dato V) {
 	puntero := a.buscarPuntero(clave, &a.raiz)
 	if *puntero == nil {
+		// Si el puntero no apuntaba a nada, lo hago apuntar al nuevo nodo
 		*puntero = CrearNodoABB(clave, dato)
 		a.cantidad++
 	}
