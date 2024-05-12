@@ -1,5 +1,9 @@
 package diccionario
 
+import (
+	TDAPila "tdas/pila"
+)
+
 type nodoAbb[K comparable, V any] struct {
 	izq   *nodoAbb[K, V]
 	der   *nodoAbb[K, V]
@@ -13,12 +17,16 @@ type abb[K comparable, V any] struct {
 	cmp      func(K, K) int
 }
 
-// type iterAbb[K comparable, V any] struct {
-// 	abb   *abb[K, V]
-// 	pila  TDAPila.Pila[*nodoAbb[K, V]]
-// 	desde *K
-// 	hasta *K
-// }
+type iterAbb[K comparable, V any] struct {
+	abb   *abb[K, V]
+	pila  TDAPila.Pila[*nodoAbb[K, V]]
+	desde *K
+	hasta *K
+}
+
+func CrearIterador[K comparable, V any](ab *abb[K, V], desde *K, hasta *K) *iterAbb[K, V] {
+	return &iterAbb[K, V]{abb: ab, pila: TDAPila.CrearPilaDinamica[*nodoAbb[K, V]](), desde: desde, hasta: hasta}
+}
 
 func CrearABB[K comparable, V any](funcion_cmp func(K, K) int) DiccionarioOrdenado[K, V] {
 	return &abb[K, V]{cmp: funcion_cmp}
@@ -124,23 +132,83 @@ func (ab *abb[K, V]) buscarReemplazo(nodo **nodoAbb[K, V]) **nodoAbb[K, V] {
 	return ab.buscarReemplazo(&(*nodo).der)
 }
 
-func (ab *abb[K, V]) Iterar(funcion_cmp func(clave K, dato V) bool) {}
-func (ab *abb[K, V]) Iterador() IterDiccionario[K, V] {
-	return ab.IteradorRango(nil, nil)
+func (ab *abb[K, V]) Iterar(funcion_cmp func(clave K, dato V) bool) {
+	ab._Iterar(funcion_cmp, ab.raiz)
 }
 
-// func (a *iterAbb[K, V]) VerActual()    {}
-// func (i *iterAbb[K, V]) HaySiguiente() {}
-// func (i *iterAbb[K, V]) Siguiente()    {}
+func (ab *abb[K, V]) _Iterar(funcion_cmp func(clave K, dato V) bool, nodoPadre *nodoAbb[K, V]) {
+	if nodoPadre == nil {
+		return
+	}
+	ab._Iterar(funcion_cmp, nodoPadre.izq)
+	if !funcion_cmp(nodoPadre.clave, nodoPadre.dato) {
+		return
+	}
+	ab._Iterar(funcion_cmp, nodoPadre.der)
 
-// func (ab *abb[K, V]) IterarRango(desde *K, hasta *K, visitar func(clave K, dato V) bool) {
-// 	_IterarRango(a.raiz, desde, hasta, visitar, a)
-// }
+}
 
-// func _IterarRango[K comparable, V any](n *nodoAbb[K, V], desde *K, hasta *K, visitar func(clave K, dato V) bool, ab *abb[K, V]) {
-// }
+func (ab *abb[K, V]) IterarRango(desde *K, hasta *K, visitar func(clave K, dato V) bool) {
+	ab._IterarRango(ab.raiz, desde, hasta, visitar)
+}
+
+func (ab *abb[K, V]) _IterarRango(nodo *nodoAbb[K, V], desde *K, hasta *K, visitar func(clave K, dato V) bool) {
+	if nodo == nil {
+		return
+	}
+	if ab.cmp(nodo.izq.clave, *desde) == 1 {
+		ab._IterarRango(nodo.izq, desde, hasta, visitar)
+	}
+	if ab.cmp(nodo.clave, *desde) == 1 && ab.cmp(nodo.clave, *hasta) == -1 {
+		visitar(nodo.clave, nodo.dato)
+	}
+	if ab.cmp(nodo.der.clave, *hasta) == -1 {
+		ab._IterarRango(nodo.der, desde, hasta, visitar)
+	}
+}
+
+func (ab *abb[K, V]) Iterador() IterDiccionario[K, V] {
+	iter := CrearIterador(ab, nil, nil)
+	actual := ab.raiz
+	for actual != nil {
+		iter.pila.Apilar(actual)
+		actual = actual.izq
+	}
+	return iter
+}
 
 func (ab *abb[K, V]) IteradorRango(desde *K, hasta *K) IterDiccionario[K, V] {
-	return ab.Iterador()
+	iter := CrearIterador(ab, desde, hasta)
+	actual := ab.raiz
+	for actual != nil {
+		if ab.cmp(actual.clave, *desde) == 1 {
+			iter.pila.Apilar(actual)
+			actual = actual.izq
+		}
+	}
+	return iter
 }
 
+func (iter *iterAbb[K, V]) VerActual() (K, V) {
+	return iter.pila.VerTope().clave, iter.pila.VerTope().dato
+}
+
+func (iter *iterAbb[K, V]) HaySiguiente() bool {
+	return iter.pila.EstaVacia()
+}
+
+func (iter *iterAbb[K, V]) Siguiente() {
+	nodo := iter.pila.Desapilar()
+	if nodo.der != nil {
+		if iter.desde == nil || iter.abb.cmp(nodo.der.clave, *iter.hasta) == -1 {
+			iter.pila.Apilar(nodo.der)
+		}
+
+		actual := nodo.der.izq
+		for actual != nil {
+			if iter.desde == nil || iter.abb.cmp(actual.clave, *iter.desde) == 1 {
+				iter.pila.Apilar(actual)
+			}
+		}
+	}
+}
