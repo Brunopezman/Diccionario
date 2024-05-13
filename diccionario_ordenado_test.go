@@ -331,3 +331,18 @@ func TestVolumenIteradorCorteABB(t *testing.T) {
 		"No debería haber seguido ejecutando si encontramos un elemento que hizo que la iteración corte")
 }
 
+func TestIteradorInternoInorder(t *testing.T) {
+	t.Log("Probamos el iterador interno con recorrido inorder")
+	dic := TDADiccionario.CrearABB[int, string](func(a, b int) int { return a - b })
+	arr := []string{"A", "B", "C", "D", "E", "F", "G", "H"}
+	for pos, valor := range arr {
+		dic.Guardar(pos, valor)
+	}
+
+	var i int
+	dic.Iterar(func(clave int, valor string) bool {
+		require.EqualValues(t, arr[i], valor)
+		i++
+		return true
+	})
+}
