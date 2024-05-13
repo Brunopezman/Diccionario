@@ -2,13 +2,16 @@ package diccionario_test
 
 import (
 	//"fmt"
+
 	TDADiccionario "tdas/diccionario"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
-func func_cmp(e1, e2 int) int {
+var TAMS_VOLUMEN_ABB = []int{12500, 25000, 50000, 100000, 200000, 400000}
+
+func func_cmp_int(e1, e2 int) int {
 	if e1 == e2 {
 		return 0
 	}
@@ -18,35 +21,40 @@ func func_cmp(e1, e2 int) int {
 	return -1
 }
 
-//func comparar_str(e1, e2 string) int {
-//	return 0
-//}
-
-func TestDiccionarioABBVacio(t *testing.T) {
-	t.Log("Comprueba que Diccionario vacio no tiene claves")
-	dic := TDADiccionario.CrearABB[int, int](func_cmp)
-	require.EqualValues(t, 0, dic.Cantidad())
-	require.False(t, dic.Pertenece(3))
-	require.PanicsWithValue(t, "La clave no pertenece al diccionario", func() { dic.Obtener(3) })
-	require.PanicsWithValue(t, "La clave no pertenece al diccionario", func() { dic.Borrar(3) })
+func func_cmp_str(s1, s2 string) int {
+	if len(s1) == len(s2) {
+		return 0
+	}
+	if len(s1) > len(s2) {
+		return 1
+	}
+	return -1
 }
-// func TestDiccionarioABBClaveDefault(t *testing.T) {
-// 	t.Log("Prueba sobre un Hash vacío que si justo buscamos la clave que es el default del tipo de dato, " +
-// 		"sigue sin existir")
-// 	dic := TDADiccionario.CrearHash[string, string]()
-// 	require.False(t, dic.Pertenece(""))
-// 	require.PanicsWithValue(t, "La clave no pertenece al diccionario", func() { dic.Obtener("") })
-// 	require.PanicsWithValue(t, "La clave no pertenece al diccionario", func() { dic.Borrar("") })
+func TestDiccionarioAbbVacio(t *testing.T) {
+	t.Log("Comprueba que Diccionario vacio no tiene claves")
+	dic := TDADiccionario.CrearABB[string, int](func_cmp_str)
+	require.EqualValues(t, 0, dic.Cantidad())
+	require.False(t, dic.Pertenece("A"))
+	require.PanicsWithValue(t, "La clave no pertenece al diccionario", func() { dic.Obtener("A") })
+	require.PanicsWithValue(t, "La clave no pertenece al diccionario", func() { dic.Borrar("A") })
+}
+func TestDiccionarioAbbClaveDefault(t *testing.T) {
+	t.Log("Prueba sobre un ABB vacío que si justo buscamos la clave que es el default del tipo de dato, " +
+		"sigue sin existir")
+	abb := TDADiccionario.CrearABB[string, string](func_cmp_str)
+	require.False(t, abb.Pertenece(""))
+	require.PanicsWithValue(t, "La clave no pertenece al diccionario", func() { abb.Obtener("") })
+	require.PanicsWithValue(t, "La clave no pertenece al diccionario", func() { abb.Borrar("") })
 
-// 	dicNum := TDADiccionario.CrearHash[int, string]()
-// 	require.False(t, dicNum.Pertenece(0))
-// 	require.PanicsWithValue(t, "La clave no pertenece al diccionario", func() { dicNum.Obtener(0) })
-// 	require.PanicsWithValue(t, "La clave no pertenece al diccionario", func() { dicNum.Borrar(0) })
-// }
+	abbNum := TDADiccionario.CrearABB[int, string](func_cmp_int)
+	require.False(t, abbNum.Pertenece(0))
+	require.PanicsWithValue(t, "La clave no pertenece al diccionario", func() { abbNum.Obtener(0) })
+	require.PanicsWithValue(t, "La clave no pertenece al diccionario", func() { abbNum.Borrar(0) })
+}
 
-func TestUnElementoABB(t *testing.T) {
+func TestUnElementoAbb(t *testing.T) {
 	t.Log("Comprueba que Diccionario con un elemento tiene esa Clave, unicamente")
-	dic := TDADiccionario.CrearABB[int, int](func_cmp)
+	dic := TDADiccionario.CrearABB[int, int](func_cmp_int)
 	dic.Guardar(1, 10)
 	require.EqualValues(t, 1, dic.Cantidad())
 	require.True(t, dic.Pertenece(1))
@@ -55,7 +63,7 @@ func TestUnElementoABB(t *testing.T) {
 	require.PanicsWithValue(t, "La clave no pertenece al diccionario", func() { dic.Obtener(2) })
 }
 
-func TestDiccionarioABBGuardar(t *testing.T) {
+func TestDiccionarioAbbGuardar(t *testing.T) {
 	t.Log("Guarda algunos pocos elementos en el diccionario, y se comprueba que en todo momento funciona acorde")
 	clave1 := 1
 	clave2 := 2
@@ -66,7 +74,7 @@ func TestDiccionarioABBGuardar(t *testing.T) {
 	claves := []int{clave1, clave2, clave3}
 	valores := []int{valor1, valor2, valor3}
 
-	dic := TDADiccionario.CrearABB[int, int](func_cmp)
+	dic := TDADiccionario.CrearABB[int, int](func_cmp_int)
 	require.False(t, dic.Pertenece(claves[0]))
 	require.False(t, dic.Pertenece(claves[0]))
 	dic.Guardar(claves[0], valores[0])
@@ -96,11 +104,11 @@ func TestDiccionarioABBGuardar(t *testing.T) {
 	require.EqualValues(t, valores[2], dic.Obtener(claves[2]))
 }
 
-func TestReemplazoDatoABB(t *testing.T) {
+func TestReemplazoDatoAbb(t *testing.T) {
 	t.Log("Guarda un par de claves, y luego vuelve a guardar, buscando que el dato se haya reemplazado")
 	clave := 1
 	clave2 := 2
-	dic := TDADiccionario.CrearABB[int, int](func_cmp)
+	dic := TDADiccionario.CrearABB[int, int](func_cmp_int)
 	dic.Guardar(clave, 100)
 	dic.Guardar(clave2, 200)
 	require.True(t, dic.Pertenece(clave))
@@ -117,11 +125,11 @@ func TestReemplazoDatoABB(t *testing.T) {
 	require.EqualValues(t, 10, dic.Obtener(clave))
 	require.EqualValues(t, 20, dic.Obtener(clave2))
 }
-func TestReemplazoDatoHopscotchABB(t *testing.T) {
+func TestReemplazoDatoHopscotchAbb(t *testing.T) {
 	t.Log("Guarda bastantes claves, y luego reemplaza sus datos. Luego valida que todos los datos sean " +
 		"correctos. Para una implementación Hopscotch, detecta errores al hacer lugar o guardar elementos.")
 
-	dic := TDADiccionario.CrearABB[int, int](func_cmp)
+	dic := TDADiccionario.CrearABB[int, int](func_cmp_int)
 	for i := 0; i < 500; i++ {
 		dic.Guardar(i, i)
 	}
@@ -135,7 +143,7 @@ func TestReemplazoDatoHopscotchABB(t *testing.T) {
 	require.True(t, ok, "Los elementos no fueron actualizados correctamente")
 }
 
-func TestDiccionarioABBBorrar(t *testing.T) {
+func TestDiccionarioAbbBorrar(t *testing.T) {
 	t.Log("Guarda algunos pocos elementos en el diccionario, y se los borra, revisando que en todo momento " +
 		"el diccionario se comporte de manera adecuada")
 	clave1 := 1
@@ -147,7 +155,7 @@ func TestDiccionarioABBBorrar(t *testing.T) {
 	claves := []int{clave1, clave2, clave3}
 	valores := []int{valor1, valor2, valor3}
 
-	dic := TDADiccionario.CrearABB[int, int](func_cmp)
+	dic := TDADiccionario.CrearABB[int, int](func_cmp_int)
 	require.False(t, dic.Pertenece(claves[0]))
 	require.False(t, dic.Pertenece(claves[0]))
 	dic.Guardar(claves[0], valores[0])
@@ -175,12 +183,24 @@ func TestDiccionarioABBBorrar(t *testing.T) {
 	require.PanicsWithValue(t, "La clave no pertenece al diccionario", func() { dic.Obtener(claves[1]) })
 }
 
-func TestGuardarYBorrarRepetidasVecesABB(t *testing.T) {
-	t.Log("Esta prueba guarda y borra repetidas veces. Esto lo hacemos porque un error comun es no considerar " +
-		"los borrados para agrandar en un Hash Cerrado. Si no se agranda, muy probablemente se quede en un ciclo " +
-		"infinito")
+func TestReutlizacionDeBorradosAbb(t *testing.T) {
+	t.Log("Prueba de caja blanca: reinsertando un elemento borrado")
+	abb := TDADiccionario.CrearABB[string, string](func_cmp_str)
+	clave := "hola"
+	abb.Guardar(clave, "mundo!")
+	abb.Borrar(clave)
+	require.EqualValues(t, 0, abb.Cantidad())
+	require.False(t, abb.Pertenece(clave))
+	abb.Guardar(clave, "mundooo!")
+	require.True(t, abb.Pertenece(clave))
+	require.EqualValues(t, 1, abb.Cantidad())
+	require.EqualValues(t, "mundooo!", abb.Obtener(clave))
+}
 
-	dic := TDADiccionario.CrearABB[int, int](func_cmp)
+func TestGuardarYBorrarRepetidasVecesAbb(t *testing.T) {
+	t.Log("Esta prueba guarda y borra repetidas veces. Esto lo hacemos porque un error comun es no considerar ")
+
+	dic := TDADiccionario.CrearABB[int, int](func_cmp_int)
 	for i := 0; i < 1000; i++ {
 		dic.Guardar(i, i)
 		require.True(t, dic.Pertenece(i))
@@ -202,7 +222,7 @@ func TestIteradorInternoClavesABB(t *testing.T) {
 	clave2 := 2
 	clave3 := 3
 	claves := []int{clave1, clave2, clave3}
-	dic := TDADiccionario.CrearABB[int, *int](func_cmp)
+	dic := TDADiccionario.CrearABB[int, *int](func_cmp_int)
 	dic.Guardar(claves[0], nil)
 	dic.Guardar(claves[1], nil)
 	dic.Guardar(claves[2], nil)
@@ -234,7 +254,7 @@ func TestIteradorInternoValoresABB(t *testing.T) {
 	clave4 := 4
 	clave5 := 5
 
-	dic := TDADiccionario.CrearABB[int, int](func_cmp)
+	dic := TDADiccionario.CrearABB[int, int](func_cmp_int)
 	dic.Guardar(clave1, 6)
 	dic.Guardar(clave2, 2)
 	dic.Guardar(clave3, 3)
@@ -250,16 +270,14 @@ func TestIteradorInternoValoresABB(t *testing.T) {
 
 	require.EqualValues(t, 720, factorial)
 }
+
 func TestPruebaIterarTrasBorradosABB(t *testing.T) {
-	t.Log("Prueba de caja blanca: Esta prueba intenta verificar el comportamiento del hash abierto cuando " +
-		"queda con listas vacías en su tabla. El iterador debería ignorar las listas vacías, avanzando hasta " +
-		"encontrar un elemento real.")
 
 	clave1 := 1
 	clave2 := 2
 	clave3 := 3
 
-	dic := TDADiccionario.CrearABB[int, int](func_cmp)
+	dic := TDADiccionario.CrearABB[int, int](func_cmp_int)
 	dic.Guardar(clave1, 100)
 	dic.Guardar(clave2, 200)
 	dic.Guardar(clave3, 300)
@@ -281,3 +299,35 @@ func TestPruebaIterarTrasBorradosABB(t *testing.T) {
 	iter.Siguiente()
 	require.False(t, iter.HaySiguiente())
 }
+
+func TestVolumenIteradorCorteABB(t *testing.T) {
+	t.Log("Prueba de volumen de iterador interno, para validar que siempre que se indique que se corte" +
+		" la iteración con la función visitar, se corte")
+
+	dic := TDADiccionario.CrearABB[int, int](func_cmp_int)
+
+	/* Inserta 'n' parejas en el abb */
+	for i := 0; i < 10000; i++ {
+		dic.Guardar(i, i)
+	}
+
+	seguirEjecutando := true
+	siguioEjecutandoCuandoNoDebia := false
+
+	dic.Iterar(func(c int, v int) bool {
+		if !seguirEjecutando {
+			siguioEjecutandoCuandoNoDebia = true
+			return false
+		}
+		if c%100 == 0 {
+			seguirEjecutando = false
+			return false
+		}
+		return true
+	})
+
+	require.False(t, seguirEjecutando, "Se tendría que haber encontrado un elemento que genere el corte")
+	require.False(t, siguioEjecutandoCuandoNoDebia,
+		"No debería haber seguido ejecutando si encontramos un elemento que hizo que la iteración corte")
+}
+
