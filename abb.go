@@ -190,6 +190,9 @@ func (ab *abb[K, V]) IteradorRango(desde *K, hasta *K) IterDiccionario[K, V] {
 }
 
 func (iter *iterAbb[K, V]) VerActual() (K, V) {
+	if !iter.HaySiguiente() {
+		panic("El iterador termino de iterar")
+	}
 	return iter.pila.VerTope().clave, iter.pila.VerTope().dato
 }
 
@@ -198,6 +201,9 @@ func (iter *iterAbb[K, V]) HaySiguiente() bool {
 }
 
 func (iter *iterAbb[K, V]) Siguiente() {
+	if !iter.HaySiguiente() {
+		panic("El iterador termino de iterar")
+	}
 	nodo := iter.pila.Desapilar()
 	if nodo.der != nil {
 		if iter.desde == nil || iter.abb.cmp(nodo.der.clave, *iter.hasta) == -1 {
