@@ -473,3 +473,40 @@ func BenchmarkIteradorAbb(b *testing.B) {
 		})
 	}
 }
+
+func TestIteradorInternoRangoClavesABB(t *testing.T) {
+	t.Log("Valida que todas las claves sean recorridas (y una única vez) con el iterador interno")
+	clave1 := 1
+	clave2 := 2
+	clave3 := 3
+	clave4 := 4
+	clave5 := 5
+	claves := []int{clave1, clave2, clave3, clave4, clave5}
+	dic := TDADiccionario.CrearABB[int, *int](func_cmp_int)
+	dic.Guardar(claves[0], nil)
+	dic.Guardar(claves[1], nil)
+	dic.Guardar(claves[2], nil)
+	dic.Guardar(claves[3], nil)
+	dic.Guardar(claves[4], nil)
+
+	cs := []int{0, 0, 0, 0, 0}
+	cantidad := 0
+	cantPtr := &cantidad
+	desde := 2
+	hasta := 4
+
+	dic.IterarRango(&desde, &hasta, func(clave int, dato *int) bool {
+		cs[cantidad] = clave
+		*cantPtr = *cantPtr + 1
+		return true
+	})
+
+	require.EqualValues(t, 3, cantidad)
+	require.NotEqualValues(t, -1, buscarInt(cs[0], claves))
+	require.NotEqualValues(t, -1, buscarInt(cs[1], claves))
+	require.NotEqualValues(t, -1, buscarInt(cs[2], claves))
+	require.NotEqualValues(t, cs[0], cs[1])
+	require.NotEqualValues(t, cs[0], cs[2])
+	require.NotEqualValues(t, cs[2], cs[1])
+}
+
