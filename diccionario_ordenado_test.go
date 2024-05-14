@@ -1,8 +1,6 @@
 package diccionario_test
 
 import (
-	//"fmt"
-
 	TDADiccionario "tdas/diccionario"
 	"testing"
 

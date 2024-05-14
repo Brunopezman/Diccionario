@@ -194,7 +194,7 @@ func (iter *iterAbb[K, V]) VerActual() (K, V) {
 }
 
 func (iter *iterAbb[K, V]) HaySiguiente() bool {
-	return iter.pila.EstaVacia()
+	return !iter.pila.EstaVacia()
 }
 
 func (iter *iterAbb[K, V]) Siguiente() {
