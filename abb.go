@@ -132,41 +132,6 @@ func (ab *abb[K, V]) buscarReemplazo(nodo **nodoAbb[K, V]) **nodoAbb[K, V] {
 	return ab.buscarReemplazo(&(*nodo).der)
 }
 
-func (ab *abb[K, V]) Iterar(funcion_cmp func(clave K, dato V) bool) {
-	ab._Iterar(funcion_cmp, ab.raiz)
-}
-
-func (ab *abb[K, V]) _Iterar(funcion_cmp func(clave K, dato V) bool, nodoPadre *nodoAbb[K, V]) {
-	if nodoPadre == nil {
-		return
-	}
-	ab._Iterar(funcion_cmp, nodoPadre.izq)
-	if !funcion_cmp(nodoPadre.clave, nodoPadre.dato) {
-		return
-	}
-	ab._Iterar(funcion_cmp, nodoPadre.der)
-
-}
-
-func (ab *abb[K, V]) IterarRango(desde *K, hasta *K, visitar func(clave K, dato V) bool) {
-	ab._IterarRango(ab.raiz, desde, hasta, visitar)
-}
-
-func (ab *abb[K, V]) _IterarRango(nodo *nodoAbb[K, V], desde *K, hasta *K, visitar func(clave K, dato V) bool) {
-	if nodo == nil {
-		return
-	}
-	if ab.cmp(nodo.izq.clave, *desde) == 1 {
-		ab._IterarRango(nodo.izq, desde, hasta, visitar)
-	}
-	if ab.cmp(nodo.clave, *desde) == 1 && ab.cmp(nodo.clave, *hasta) == -1 {
-		visitar(nodo.clave, nodo.dato)
-	}
-	if ab.cmp(nodo.der.clave, *hasta) == -1 {
-		ab._IterarRango(nodo.der, desde, hasta, visitar)
-	}
-}
-
 func (ab *abb[K, V]) Iterador() IterDiccionario[K, V] {
 	iter := CrearIterador(ab, nil, nil)
 	actual := ab.raiz
@@ -175,6 +140,19 @@ func (ab *abb[K, V]) Iterador() IterDiccionario[K, V] {
 		actual = actual.izq
 	}
 	return iter
+}
+func (a *abb[K, V]) Iterar(visitar func(clave K, dato V) bool) {
+	_Iterar[K, V](visitar, &a.raiz)
+}
+
+func _Iterar[K comparable, V any](visitar func(clave K, dato V) bool, nodo **nodoAbb[K, V]) bool {
+	if *nodo == nil {
+		return true
+	}
+	if !_Iterar(visitar, &(*nodo).izq) || !visitar((*nodo).clave, (*nodo).dato) || !_Iterar(visitar, &(*nodo).der) {
+		return false
+	}
+	return true
 }
 
 func (ab *abb[K, V]) IteradorRango(desde *K, hasta *K) IterDiccionario[K, V] {
@@ -187,6 +165,26 @@ func (ab *abb[K, V]) IteradorRango(desde *K, hasta *K) IterDiccionario[K, V] {
 		}
 	}
 	return iter
+}
+
+func (a *abb[K, V]) IterarRango(desde, hasta *K, visitar func(clave K, dato V) bool) {
+	_IterarRango(&a.raiz, desde, hasta, visitar, a.cmp)
+}
+
+func _IterarRango[K comparable, V any](nodo **nodoAbb[K, V], desde, hasta *K, visitar func(clave K, dato V) bool, cmp func(K, K) int) {
+	if *nodo == nil {
+		return
+	}
+	if desde == nil || cmp(*desde, (*nodo).clave) < 0 {
+		_IterarRango(&(*nodo).izq, desde, hasta, visitar, cmp)
+	}
+	if desde == nil || cmp(*desde, (*nodo).clave) <= 0 && (hasta == nil || cmp(*hasta, (*nodo).clave) >= 0) {
+		visitar((*nodo).clave, (*nodo).dato)
+	}
+	if hasta == nil || cmp(*hasta, (*nodo).clave) > 0 {
+		_IterarRango(&(*nodo).der, desde, hasta, visitar, cmp)
+	}
+
 }
 
 func (iter *iterAbb[K, V]) VerActual() (K, V) {

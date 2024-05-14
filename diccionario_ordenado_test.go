@@ -1,6 +1,9 @@
 package diccionario_test
 
 import (
+	"fmt"
+	"math/rand"
+	"strings"
 	TDADiccionario "tdas/diccionario"
 	"testing"
 
@@ -327,4 +330,146 @@ func TestVolumenIteradorCorteABB(t *testing.T) {
 	require.False(t, seguirEjecutando, "Se tendría que haber encontrado un elemento que genere el corte")
 	require.False(t, siguioEjecutandoCuandoNoDebia,
 		"No debería haber seguido ejecutando si encontramos un elemento que hizo que la iteración corte")
+}
+
+func ejecutarPruebaVolumenAbb(b *testing.B, n int) {
+	dic := TDADiccionario.CrearABB[string, int](strings.Compare)
+
+	claves := make([]string, n)
+	valores := make([]int, n)
+	clavesOrd := make([]string, n)
+	valoresOrd := make([]int, n)
+
+	for i := 0; i < n; i++ {
+		claves[i] = fmt.Sprintf("%08d", i)
+		valores[i] = i
+		clavesOrd[i] = fmt.Sprintf("%08d", i)
+		valoresOrd[i] = i
+	}
+	rand.Shuffle(n, func(i, j int) {
+		claves[i], claves[j] = claves[j], claves[i]
+		valores[i], valores[j] = valores[j], valores[i]
+	})
+	/* Inserta 'n' parejas en el ABB */
+	for i := range claves {
+		dic.Guardar(claves[i], valores[i])
+	}
+
+	require.EqualValues(b, n, dic.Cantidad(), "La cantidad de elementos es incorrecta")
+
+	/* Verifica que devuelva los valores correctos */
+	ok := true
+	for i := 0; i < n; i++ {
+		ok = dic.Pertenece(clavesOrd[i])
+		require.EqualValues(b, dic.Obtener(clavesOrd[i]), valoresOrd[i])
+		if !ok {
+			break
+		}
+		ok = dic.Obtener(claves[i]) == valores[i]
+		if !ok {
+			break
+		}
+	}
+
+	require.True(b, ok, "Pertenece y Obtener con muchos elementos no funciona correctamente")
+	require.EqualValues(b, n, dic.Cantidad(), "La cantidad de elementos es incorrecta")
+
+	/* Verifica que borre y devuelva los valores correctos */
+	for i := 0; i < n; i++ {
+		ok = dic.Borrar(clavesOrd[i]) == valoresOrd[i]
+		if !ok {
+			break
+		}
+	}
+
+	require.True(b, ok, "Borrar muchos elementos no funciona correctamente")
+	require.EqualValues(b, 0, dic.Cantidad())
+}
+
+func BenchmarkDiccionarioOrdenado(b *testing.B) {
+	b.Log("Prueba de stress del Diccionario. Prueba guardando distinta cantidad de elementos (muy grandes), " +
+		"ejecutando muchas veces las pruebas para generar un benchmark. Valida que la cantidad " +
+		"sea la adecuada. Luego validamos que podemos obtener y ver si pertenece cada una de las claves geeneradas, " +
+		"y que luego podemos borrar sin problemas")
+	for _, n := range TAMS_VOLUMEN_ABB {
+		b.Run(fmt.Sprintf("Prueba %d elementos", n), func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				ejecutarPruebaVolumenAbb(b, n)
+			}
+		})
+	}
+}
+
+func ejecutarPruebasVolumenIteradorAbb(b *testing.B, n int) {
+	dic := TDADiccionario.CrearABB[string, *int](strings.Compare)
+
+	claves := make([]string, n)
+	valores := make([]int, n)
+	clavesOrd := make([]string, n)
+	valoresOrd := make([]int, n)
+
+	for i := 0; i < n; i++ {
+		claves[i] = fmt.Sprintf("%08d", i)
+		valores[i] = i
+		clavesOrd[i] = fmt.Sprintf("%08d", i)
+		valoresOrd[i] = i
+	}
+	rand.Shuffle(n, func(i, j int) {
+		claves[i], claves[j] = claves[j], claves[i]
+		valores[i], valores[j] = valores[j], valores[i]
+	})
+	/* Inserta 'n' parejas en el ABB */
+	for i := 0; i < n; i++ {
+		dic.Guardar(claves[i], &valores[i])
+	}
+
+	// Prueba de iteración sobre las claves almacenadas.
+	iter := dic.Iterador()
+	require.True(b, iter.HaySiguiente())
+
+	ok := true
+	var i int
+	var clave string
+	var valor *int
+
+	for i = 0; i < n; i++ {
+		if !iter.HaySiguiente() {
+			ok = false
+			break
+		}
+		c1, v1 := iter.VerActual()
+		clave = c1
+		valor = v1
+		if clave == "" || valor == nil || clavesOrd[i] != clave || valoresOrd[i] != *valor {
+			ok = false
+			break
+		}
+		*valor = n
+		iter.Siguiente()
+	}
+	require.True(b, ok, "Iteracion en volumen no funciona correctamente")
+	require.EqualValues(b, n, i, "No se recorrió todo el largo")
+	require.False(b, iter.HaySiguiente(), "El iterador debe estar al final luego de recorrer")
+
+	ok = true
+	for i = 0; i < n; i++ {
+		if valores[i] != n {
+			ok = false
+			break
+		}
+	}
+	require.True(b, ok, "No se cambiaron todos los elementos")
+}
+
+func BenchmarkIteradorAbb(b *testing.B) {
+	b.Log("Prueba de stress del Iterador del Diccionario. Prueba guardando distinta cantidad de elementos " +
+		"(muy grandes) b.N elementos, iterarlos todos sin problemas. Se ejecuta cada prueba b.N veces para generar " +
+		"un benchmark")
+	for _, n := range TAMS_VOLUMEN_ABB {
+		b.Run(fmt.Sprintf("Prueba %d elementos", n), func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				ejecutarPruebasVolumenIteradorAbb(b, n)
+			}
+		})
+	}
 }
