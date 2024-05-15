@@ -63,10 +63,9 @@ func (ab *abb[K, V]) Guardar(clave K, dato V) {
 		//Si el arbol no tiene raiz
 		*puntero = CrearNodoABB(clave, dato)
 		ab.cantidad++
+	} else {
+		(*puntero).dato = dato
 	}
-	// si ya existe, actualizo el dato del nodo
-	(*puntero).dato = dato
-
 }
 
 func (ab *abb[K, V]) Pertenece(clave K) bool {
