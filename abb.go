@@ -36,25 +36,21 @@ func CrearNodoABB[K comparable, V any](clave K, dato V) *nodoAbb[K, V] {
 	return &nodoAbb[K, V]{izq: nil, der: nil, clave: clave, dato: dato}
 }
 
-func (ab *abb[K, V]) buscarPuntero(clave K, nodoPadre **nodoAbb[K, V]) **nodoAbb[K, V] {
+func (ab *abb[K, V]) buscarPuntero(clave K, nodo **nodoAbb[K, V]) **nodoAbb[K, V] {
 	//dir nodo vacia: No tiene ningun hijo
-	if *nodoPadre == nil {
-		return nodoPadre
+	if *nodo == nil {
+		return nodo
+	}
+	// Elemento encontrado
+	if ab.cmp(clave, (*nodo).clave) == 0 {
+		return nodo
 	}
 	// Existe raiz, entonces comparo a izq, despues der
-	if ab.cmp(clave, (*nodoPadre).clave) < 0 {
-		if (*nodoPadre).izq == nil || ab.cmp(clave, (*nodoPadre).izq.clave) == 0 {
-			//  Quiere decir que en realidad es hoja ahi, por lo tanto la retorno
-			return &(*nodoPadre).izq
-		}
-		return ab.buscarPuntero(clave, &(*nodoPadre).izq)
-	} else if ab.cmp(clave, (*nodoPadre).clave) > 0 {
-		if (*nodoPadre).der == nil || ab.cmp(clave, (*nodoPadre).der.clave) == 0 {
-			return &(*nodoPadre).der
-		}
-		return ab.buscarPuntero(clave, &(*nodoPadre).der)
+	if ab.cmp(clave, (*nodo).clave) < 0 {
+		return ab.buscarPuntero(clave, &(*nodo).izq)
+	} else {
+		return ab.buscarPuntero(clave, &(*nodo).der)
 	}
-	return nodoPadre
 }
 
 func (ab *abb[K, V]) Guardar(clave K, dato V) {
@@ -86,14 +82,15 @@ func (ab *abb[K, V]) Borrar(clave K) V {
 		panic("La clave no pertenece al diccionario")
 	}
 	eliminado := (*puntero).dato
+	hijos := ab.cantidadHijos(puntero)
 	// Caso 0 hijos, Caso 1 hijo, Caso 2 hijos
-	if ab.cantidadHijos(puntero) == 0 {
+	if hijos == 0 {
 		*puntero = nil
-	} else if ab.cantidadHijos(puntero) == 1 {
+	} else if hijos == 1 {
 		nodo := ab.obtenerHijo(puntero)
 		*puntero = *nodo
 	} else {
-		nodo := ab.buscarReemplazo(puntero)
+		nodo := ab.buscarReemplazo(&(*puntero).izq)
 		clave, dato := (*nodo).clave, (*nodo).dato
 		(*puntero).clave = clave
 		(*puntero).dato = dato
@@ -141,7 +138,7 @@ func (ab *abb[K, V]) Iterador() IterDiccionario[K, V] {
 	return iter
 }
 func (a *abb[K, V]) Iterar(visitar func(clave K, dato V) bool) {
-	_Iterar[K, V](visitar, &a.raiz)
+	_Iterar(visitar, &a.raiz)
 }
 
 func _Iterar[K comparable, V any](visitar func(clave K, dato V) bool, nodo **nodoAbb[K, V]) bool {
