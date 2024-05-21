@@ -36,20 +36,25 @@ func CrearNodoABB[K comparable, V any](clave K, dato V) *nodoAbb[K, V] {
 	return &nodoAbb[K, V]{izq: nil, der: nil, clave: clave, dato: dato}
 }
 
-func (ab *abb[K, V]) buscarPuntero(clave K, nodo **nodoAbb[K, V]) **nodoAbb[K, V] {
+func (ab *abb[K, V]) buscarPuntero(clave K, nodoPadre **nodoAbb[K, V]) **nodoAbb[K, V] {
 	//dir nodo vacia: No tiene ningun hijo
-	if *nodo == nil {
-		return nodo
-	}
-	// Elemento encontrado
-	if ab.cmp(clave, (*nodo).clave) == 0 {
-		return nodo
+	if *nodoPadre == nil {
+		return nodoPadre
 	}
 	// Existe raiz, entonces comparo a izq, despues der
-	if ab.cmp(clave, (*nodo).clave) < 0 {
-		return ab.buscarPuntero(clave, &(*nodo).izq)
+	if ab.cmp(clave, (*nodoPadre).clave) < 0 {
+		if (*nodoPadre).izq == nil || ab.cmp(clave, (*nodoPadre).izq.clave) == 0 {
+			//  Quiere decir que en realidad es hoja ahi, por lo tanto la retorno
+			return &(*nodoPadre).izq
+		}
+		return ab.buscarPuntero(clave, &(*nodoPadre).izq)
+	} else if ab.cmp(clave, (*nodoPadre).clave) > 0 {
+		if (*nodoPadre).der == nil || ab.cmp(clave, (*nodoPadre).der.clave) == 0 {
+			return &(*nodoPadre).der
+		}
+		return ab.buscarPuntero(clave, &(*nodoPadre).der)
 	} else {
-		return ab.buscarPuntero(clave, &(*nodo).der)
+		return nodoPadre
 	}
 }
 
@@ -60,8 +65,10 @@ func (ab *abb[K, V]) Guardar(clave K, dato V) {
 		*puntero = CrearNodoABB(clave, dato)
 		ab.cantidad++
 	} else {
+		// si ya existe, actualizo el dato del nodo
 		(*puntero).dato = dato
 	}
+
 }
 
 func (ab *abb[K, V]) Pertenece(clave K) bool {
@@ -81,8 +88,8 @@ func (ab *abb[K, V]) Borrar(clave K) V {
 	if *puntero == nil {
 		panic("La clave no pertenece al diccionario")
 	}
-	eliminado := (*puntero).dato
 	hijos := ab.cantidadHijos(puntero)
+	eliminado := (*puntero).dato
 	// Caso 0 hijos, Caso 1 hijo, Caso 2 hijos
 	if hijos == 0 {
 		*puntero = nil
@@ -92,6 +99,7 @@ func (ab *abb[K, V]) Borrar(clave K) V {
 	} else {
 		nodo := ab.buscarReemplazo(&(*puntero).izq)
 		clave, dato := (*nodo).clave, (*nodo).dato
+		*nodo = (*nodo).izq
 		(*puntero).clave = clave
 		(*puntero).dato = dato
 	}
@@ -105,12 +113,12 @@ func (ab *abb[K, V]) Cantidad() int {
 }
 
 func (ab *abb[K, V]) cantidadHijos(nodo **nodoAbb[K, V]) int {
-	if (*nodo).izq == nil && (*nodo).der == nil {
-		return 0
-	} else if (*nodo).izq != nil && (*nodo).der == nil || (*nodo).izq == nil && (*nodo).der != nil {
-		return 1
-	} else {
+	if (*nodo).izq != nil && (*nodo).der != nil {
 		return 2
+	} else if (*nodo).izq == nil && (*nodo).der == nil {
+		return 0
+	} else {
+		return 1
 	}
 }
 
@@ -151,18 +159,6 @@ func _Iterar[K comparable, V any](visitar func(clave K, dato V) bool, nodo **nod
 	return true
 }
 
-func (ab *abb[K, V]) IteradorRango(desde *K, hasta *K) IterDiccionario[K, V] {
-	iter := CrearIterador(ab, desde, hasta)
-	actual := ab.raiz
-	for actual != nil {
-		if ab.cmp(actual.clave, *desde) == 1 {
-			iter.pila.Apilar(actual)
-			actual = actual.izq
-		}
-	}
-	return iter
-}
-
 func (a *abb[K, V]) IterarRango(desde, hasta *K, visitar func(clave K, dato V) bool) {
 	_IterarRango(&a.raiz, desde, hasta, visitar, a.cmp)
 }
@@ -183,6 +179,20 @@ func _IterarRango[K comparable, V any](nodo **nodoAbb[K, V], desde, hasta *K, vi
 
 }
 
+func (ab *abb[K, V]) IteradorRango(desde *K, hasta *K) IterDiccionario[K, V] {
+	iter := CrearIterador(ab, desde, hasta)
+	actual := ab.raiz
+	for actual != nil {
+		if (iter.desde == nil && iter.hasta == nil) || (iter.abb.cmp(actual.clave, *iter.desde) == 1 && iter.abb.cmp(actual.clave, *iter.hasta) == -1) {
+			iter.pila.Apilar(actual)
+			actual = actual.izq
+		} else {
+			return iter
+		}
+	}
+	return iter
+}
+
 func (iter *iterAbb[K, V]) VerActual() (K, V) {
 	if !iter.HaySiguiente() {
 		panic("El iterador termino de iterar")
@@ -200,14 +210,17 @@ func (iter *iterAbb[K, V]) Siguiente() {
 	}
 	nodo := iter.pila.Desapilar()
 	if nodo.der != nil {
-		if iter.desde == nil || iter.abb.cmp(nodo.der.clave, *iter.hasta) == -1 {
+		if (iter.desde == nil && iter.hasta == nil) || (iter.abb.cmp(nodo.der.clave, *iter.desde) == 1 && iter.abb.cmp(nodo.der.clave, *iter.hasta) == -1) {
 			iter.pila.Apilar(nodo.der)
 		}
 
 		actual := nodo.der.izq
 		for actual != nil {
-			if iter.desde == nil || iter.abb.cmp(actual.clave, *iter.desde) == 1 {
+			if (iter.desde == nil && iter.hasta == nil) || (iter.abb.cmp(nodo.der.clave, *iter.desde) == 1 && iter.abb.cmp(nodo.der.clave, *iter.hasta) == -1) {
 				iter.pila.Apilar(actual)
+				actual = actual.izq
+			} else {
+				break
 			}
 		}
 	}
