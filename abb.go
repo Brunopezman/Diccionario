@@ -135,7 +135,7 @@ func (ab *abb[K, V]) buscarReemplazo(nodo **nodoAbb[K, V]) **nodoAbb[K, V] {
 	}
 	return ab.buscarReemplazo(&(*nodo).der)
 }
-
+// Iterador Externo sin rango
 func (ab *abb[K, V]) Iterador() IterDiccionario[K, V] {
 	iter := CrearIterador(ab, nil, nil)
 	actual := ab.raiz
@@ -145,6 +145,8 @@ func (ab *abb[K, V]) Iterador() IterDiccionario[K, V] {
 	}
 	return iter
 }
+
+// Iterador interno sin rango
 func (a *abb[K, V]) Iterar(visitar func(clave K, dato V) bool) {
 	_Iterar(visitar, &a.raiz)
 }
@@ -159,6 +161,22 @@ func _Iterar[K comparable, V any](visitar func(clave K, dato V) bool, nodo **nod
 	return true
 }
 
+// Iterador Externo con rango
+func (ab *abb[K, V]) IteradorRango(desde *K, hasta *K) IterDiccionario[K, V] {
+	iter := CrearIterador(ab, desde, hasta)
+	actual := ab.raiz
+	for actual != nil {
+		if (iter.desde == nil && iter.hasta == nil) || (iter.abb.cmp(actual.clave, *iter.desde) == 1 && iter.abb.cmp(actual.clave, *iter.hasta) == -1) {
+			iter.pila.Apilar(actual)
+			actual = actual.izq
+		} else {
+			return iter
+		}
+	}
+	return iter
+}
+
+// Iterador Interno con rango
 func (a *abb[K, V]) IterarRango(desde, hasta *K, visitar func(clave K, dato V) bool) {
 	_IterarRango(&a.raiz, desde, hasta, visitar, a.cmp)
 }
@@ -177,20 +195,6 @@ func _IterarRango[K comparable, V any](nodo **nodoAbb[K, V], desde, hasta *K, vi
 		_IterarRango(&(*nodo).der, desde, hasta, visitar, cmp)
 	}
 
-}
-
-func (ab *abb[K, V]) IteradorRango(desde *K, hasta *K) IterDiccionario[K, V] {
-	iter := CrearIterador(ab, desde, hasta)
-	actual := ab.raiz
-	for actual != nil {
-		if (iter.desde == nil && iter.hasta == nil) || (iter.abb.cmp(actual.clave, *iter.desde) == 1 && iter.abb.cmp(actual.clave, *iter.hasta) == -1) {
-			iter.pila.Apilar(actual)
-			actual = actual.izq
-		} else {
-			return iter
-		}
-	}
-	return iter
 }
 
 func (iter *iterAbb[K, V]) VerActual() (K, V) {
